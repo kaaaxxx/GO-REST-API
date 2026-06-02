@@ -1,5 +1,4 @@
-env : "dev"
-storage-path: "storage/storage.db"
-http-server:
+env: "dev"
+storage_path: "storage/storage.db"
+http_server:
   address: "localhost:8082"
-  
