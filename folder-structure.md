@@ -1,5 +1,7 @@
 ### Project Structure
 
+go run .\cmd\students-api\main.go -config config/config.yaml
+
 ```plaintext
 student-api
 ├── cmd/

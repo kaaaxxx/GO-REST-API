@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Students</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f5f5; color: #1a1a1a; line-height: 1.5; padding: 2rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 1.5rem; }
+  h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: .75rem; }
+  .card { background: #fff; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .col { flex: 1; min-width: 200px; }
+  label { display: block; font-size: .85rem; font-weight: 500; margin-bottom: .25rem; color: #555; }
+  input { width: 100%; padding: .5rem .75rem; border: 1px solid #ccc; border-radius: 6px; font-size: .9rem; }
+  input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
+  .btn {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .5rem 1rem; border: none; border-radius: 6px;
+    font-size: .85rem; font-weight: 500; cursor: pointer;
+    transition: background .15s; text-decoration: none;
+  }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-green { background: #16a34a; color: #fff; }
+  .btn-green:hover { background: #15803d; }
+  .btn-orange { background: #ea580c; color: #fff; }
+  .btn-orange:hover { background: #c2410c; }
+  .btn-outline { background: transparent; color: #555; border: 1px solid #ccc; }
+  .btn-outline:hover { background: #f0f0f0; }
+  .btn-sm { padding: .35rem .7rem; font-size: .8rem; }
+  .actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .actions .btn { flex: 1; justify-content: center; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th, td { text-align: left; padding: .6rem .5rem; border-bottom: 1px solid #eee; }
+  th { font-weight: 600; color: #555; font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
+  tr:hover td { background: #fafafa; }
+  .toast {
+    position: fixed; top: 1rem; right: 1rem;
+    padding: .75rem 1.25rem; border-radius: 8px; color: #fff;
+    font-size: .9rem; z-index: 999; opacity: 0; transition: opacity .3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .toast.success { background: #16a34a; }
+  .toast.error { background: #dc2626; }
+  .lookup-result { margin-top: .75rem; padding: .75rem; background: #f9f9f9; border-radius: 6px; display: none; }
+  .lookup-result.show { display: block; }
+  .empty { text-align: center; padding: 2rem; color: #888; font-size: .9rem; }
+  .badge { display: inline-block; background: #e8e8e8; padding: .15rem .5rem; border-radius: 12px; font-size: .75rem; color: #555; }
+  @media (max-width: 600px) {
+    body { padding: 1rem; }
+    .row { flex-direction: column; }
+    .actions { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Students</h1>
+
+  <div id="toast" class="toast"></div>
+
+  <div class="card">
+    <h2>Add Student</h2>
+    <form id="addForm">
+      <div class="row">
+        <div class="col">
+          <label for="name">Name</label>
+          <input type="text" id="name" required>
+        </div>
+        <div class="col">
+          <label for="email">Email</label>
+          <input type="email" id="email" required>
+        </div>
+        <div class="col">
+          <label for="age">Age</label>
+          <input type="number" id="age" min="1" required>
+        </div>
+        <div class="col" style="display:flex;align-items:flex-end;">
+          <button type="submit" class="btn btn-primary" style="width:100%;">Add</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Lookup by ID</h2>
+    <div class="row">
+      <div class="col" style="flex:0 0 200px;">
+        <input type="number" id="lookupId" placeholder="Enter student ID" min="1">
+      </div>
+      <div class="col" style="flex:0 0 auto;">
+        <button class="btn btn-primary" id="lookupBtn">Search</button>
+      </div>
+    </div>
+    <div class="lookup-result" id="lookupResult"></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
+      <h2 style="margin:0;">All Students</h2>
+      <div class="actions" style="margin:0;">
+        <button class="btn btn-green btn-sm" id="exportCsv">CSV</button>
+        <button class="btn btn-orange btn-sm" id="exportPdf">PDF</button>
+        <button class="btn btn-outline btn-sm" id="refreshBtn">Refresh</button>
+      </div>
+    </div>
+    <div id="studentTableWrap">
+      <div class="empty" id="emptyState">No students yet. Add one above.</div>
+      <table id="studentTable" style="display:none;">
+        <thead>
+          <tr><th>ID</th><th>Name</th><th>Email</th><th>Age</th></tr>
+        </thead>
+        <tbody id="studentTbody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:.75rem;font-size:.8rem;color:#888;">
+      <span id="studentCount" class="badge">0 students</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8082';
+
+const toast = (msg, type) => {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `toast ${type} show`;
+  setTimeout(() => el.classList.remove('show'), 2500);
+};
+
+const studentTbody = document.getElementById('studentTbody');
+const studentTable = document.getElementById('studentTable');
+const emptyState = document.getElementById('emptyState');
+const studentCount = document.getElementById('studentCount');
+
+function clearForm() {
+  document.getElementById('addForm').reset();
+}
+
+async function loadStudents() {
+  try {
+    const res = await fetch(`${API}/api/students`);
+    if (!res.ok) throw new Error('Failed to fetch');
+    const data = await res.json();
+    const students = Array.isArray(data) ? data : [];
+    renderStudents(students);
+  } catch (e) {
+    toast('Failed to load students', 'error');
+  }
+}
+
+function renderStudents(students) {
+  studentTbody.innerHTML = '';
+  if (students.length === 0) {
+    studentTable.style.display = 'none';
+    emptyState.style.display = 'block';
+    studentCount.textContent = '0 students';
+    return;
+  }
+  studentTable.style.display = '';
+  emptyState.style.display = 'none';
+  studentCount.textContent = `${students.length} student${students.length !== 1 ? 's' : ''}`;
+  students.forEach(s => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${s.id}</td><td>${esc(s.name)}</td><td>${esc(s.email)}</td><td>${s.age}</td>`;
+    studentTbody.appendChild(tr);
+  });
+}
+
+function esc(s) {
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+}
+
+document.getElementById('addForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const age = parseInt(document.getElementById('age').value, 10);
+  if (!name || !email || !age) { toast('Please fill all fields', 'error'); return; }
+  try {
+    const res = await fetch(`${API}/api/students`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, age })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.Error || 'Failed to add');
+    }
+    const data = await res.json();
+    toast(`Added student #${data.id}`, 'success');
+    clearForm();
+    loadStudents();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+});
+
+document.getElementById('lookupBtn').addEventListener('click', async () => {
+  const id = document.getElementById('lookupId').value.trim();
+  if (!id) { toast('Enter a student ID', 'error'); return; }
+  const el = document.getElementById('lookupResult');
+  try {
+    const res = await fetch(`${API}/api/students/${id}`);
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.Error || 'Not found');
+    }
+    const s = await res.json();
+    el.innerHTML = `<strong>#${s.id}</strong> — ${esc(s.name)} · ${esc(s.email)} · ${s.age}`;
+    el.className = 'lookup-result show';
+  } catch (e) {
+    el.innerHTML = `<span style="color:#dc2626;">${esc(e.message)}</span>`;
+    el.className = 'lookup-result show';
+  }
+});
+
+document.getElementById('exportCsv').addEventListener('click', async () => {
+  try {
+    const res = await fetch(`${API}/api/students`);
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    const students = Array.isArray(data) ? data : [];
+    if (students.length === 0) { toast('No students to export', 'error'); return; }
+    let csv = 'ID,Name,Email,Age\n';
+    students.forEach(s => { csv += `${s.id},"${s.name}","${s.email}",${s.age}\n`; });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'students.csv'; a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV exported', 'success');
+  } catch (e) { toast('Export failed', 'error'); }
+});
+
+document.getElementById('exportPdf').addEventListener('click', async () => {
+  try {
+    const res = await fetch(`${API}/api/students`);
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    const students = Array.isArray(data) ? data : [];
+    if (students.length === 0) { toast('No students to export', 'error'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text('Students List', 14, 15);
+    doc.autoTable({
+      head: [['ID', 'Name', 'Email', 'Age']],
+      body: students.map(s => [s.id, s.name, s.email, s.age]),
+      startY: 22,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [37, 99, 235] }
+    });
+    doc.save('students.pdf');
+    toast('PDF exported', 'success');
+  } catch (e) { toast('Export failed', 'error'); }
+});
+
+document.getElementById('lookupId').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('lookupBtn').click();
+});
+
+document.getElementById('refreshBtn').addEventListener('click', loadStudents);
+
+loadStudents();
+</script>
+</body>
+</html>

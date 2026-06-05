@@ -15,6 +15,19 @@ import (
 	"github.com/kaaaxxx/students-api/internal/storage/sqlite"
 )
 
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	//load config
 	cfg := config.MustLoad()
@@ -35,11 +48,14 @@ func main() {
 	router.HandleFunc("POST /api/students", student.New(storage))
 	router.HandleFunc("GET /api/students/{id}", student.GetById(storage))
 	router.HandleFunc("GET /api/students", student.GetList(storage))
+
+	// CORS middleware
+	handler := corsMiddleware(router)
 	// setup server
 
 	server := http.Server{
 		Addr:    cfg.HTTPServer.Addr,
-		Handler: router,
+		Handler: handler,
 	}
 	slog.Info("Server started", slog.String("Address", cfg.HTTPServer.Addr))
 
