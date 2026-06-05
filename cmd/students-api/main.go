@@ -18,19 +18,22 @@ import (
 func main() {
 	//load config
 	cfg := config.MustLoad()
-	//setup databse 
+	//setup databse
 
 	storage, err := sqlite.New(cfg)
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 	}
 
+	defer storage.Db.Close()
+
 	slog.Info("storage initialized", slog.String("env", cfg.Env), slog.String("version", "1.0.0"))
-	
+
 	//setup router
 	router := http.NewServeMux()
 
 	router.HandleFunc("POST /api/students", student.New(storage))
+	router.HandleFunc("GET /api/students/{id}", student.GetById(storage))
 	// setup server
 
 	server := http.Server{
@@ -48,7 +51,7 @@ func main() {
 	go func() {
 		err := server.ListenAndServe()
 		if err != nil {
-			log.Fatal("Faield to start server!")
+			log.Fatalf("Failed to start server: %v", err)
 		}
 	}()
 
@@ -64,6 +67,7 @@ func main() {
 
 	if err := server.Shutdown(ctx); err != nil {
 		slog.Error("Failed to shutdown server", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 	slog.Info("Server shutdown successfully!")
 
